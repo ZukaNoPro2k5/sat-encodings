@@ -1,5 +1,6 @@
 from pysat.solvers import Solver
 
+from cardinality_encodings.scl import window_indicators
 from core.variable_pool import VariablePool
 
 
@@ -11,46 +12,6 @@ def exactly_one(literals: list[int]) -> list[list[int]]:
             clauses.append([-literals[i], -literals[j]])
 
     return clauses
-
-
-def at_least_one_chain(
-    literals: list[int],
-    pool: VariablePool,
-    clauses: list[list[int]],
-) -> list[int]:
-    chain = [literals[0]]
-
-    for literal in literals[1:]:
-        current = pool.new_var()
-        clauses.append([-chain[-1], current])
-        clauses.append([-literal, current])
-        chain.append(current)
-
-    return chain
-
-
-def window_indicators(
-    literals: list[int],
-    width: int,
-    pool: VariablePool,
-    clauses: list[list[int]],
-) -> list[list[int]]:
-    blocks = [literals[i:i + width] for i in range(0, len(literals), width)]
-    prefixes = [at_least_one_chain(block, pool, clauses) for block in blocks]
-    suffixes = [at_least_one_chain(block[::-1], pool, clauses) for block in blocks]
-    windows = []
-
-    for start in range(len(literals) - width + 1):
-        block, offset = divmod(start, width)
-        if offset == 0:
-            windows.append([prefixes[block][width - 1]])
-        else:
-            windows.append([
-                suffixes[block][width - offset - 1],
-                prefixes[block + 1][offset - 1],
-            ])
-
-    return windows
 
 
 def check(n: int, edges: list[tuple[int, int]], distance: int) -> list[int] | None:
